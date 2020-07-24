@@ -1,0 +1,20 @@
+body 
+{
+    width: 600px;
+    margin: 5px auto;
+    background-color: #8BED8F;
+    padding: 0px 20px 0px 20px;
+    border: 3px solid black;
+}
+h1
+{
+    font-size: 27px;
+    text-align: center;
+    font-family: "Lucida Console", Courier, monospace;
+}
+#credits
+{
+    font-size: 12px;
+    text-align: right;
+    font-family: "Lucida Console", Courier, monospace;
+}

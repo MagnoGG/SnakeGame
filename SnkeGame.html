@@ -9,17 +9,19 @@
     <body>
         <h1>Snke-Game!</h1>
         <div id = "game"></div>
-        <p id = "credits">
-            Created by: <a href="https://github.com/MagnoGG"><bold>MagnoGG</bold></a>
-        </p>
+        <p id = "credits">Created by: <a href="https://github.com/MagnoGG">MagnoGG</a></p>
         <!-- Importing libraries -->
         <script src = "./lib/p5.min.js"></script>
         <script src = "./lib/button.js"></script>
         <!-- Importing game objects -->
-        <script src = "./src/snake.js"></script>
-        <script src = "./src/food.js"></script>
-        <script src = "./src/gui.js"></script>
+        <script src = "./src/gameObjects/snake.js"></script>
+        <script src = "./src/gameObjects/food.js"></script>
+        <!-- Importing GUI -->
+        <script src = "./src/GUI/start.js"></script>
+        <script src = "./src/GUI/game.js"></script>
+        <script src = "./src/GUI/over.js"></script>
         <!-- Load main script -->
-        <script src = "./src/main.js"></script>
+        <script src = "./src/main/draw.js"></script>
+        <script src = "./src/main/global.js"></script>
     </body>
 </html>

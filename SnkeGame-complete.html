@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html>
+    <header>
+        <title>Snke-Game</title>
+        <meta charset="utf-8"/>
+    </header>
+    <body style="width: 600px; margin: 5px auto; background-color: #8BED8F; padding: 0px 20px 0px 20px; border: 3px solid black;">
+        <h1 style="font-size: 27px; text-align: center; font-family: 'Courier New', Courier, monospace;">Snke-Game!</h1>
+        <div id = "game"></div>
+        <p id = "credits" style="font-size: 12px; text-align: right; font-family: 'Courier New', Courier, monospace;">Created by: <a href="https://github.com/MagnoGG">MagnoGG</a></p>
+        <!-- Importing libraries -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.10.2/p5.js"></script>
+        <!-- Main script -->
+        <script>
+            /**
+             * SNAKE GAME
+             * This is the classic snake game. It
+             * have to eat all the red dots to grow,
+             * but careful, you lose if it touches
+             * itself o goes out the edge.
+             * 
+             * This is the setup program, and have the
+             * event control for the mouse and keyboard
+             */
+            
+            /**Global variables*/
+            let gameVariable;
+            let gui;
+            let game;
+            let temp
+            
+            /**Set up the system, iniciate variables*/
+            function setup()
+            {
+                //Creating a canvas and linking it to the html
+                createCanvas(600, 600).parent("game");
+
+                //Initialating
+                game = 
+                {
+                    snake : new Snake(),
+                    food  : new Food()
+                };
+                gui = 
+                {
+                    start : new StartMenu(),
+                    game  : new GameGUI(),
+                    over  : new GameOverMenu()
+                };
+                gameVariable = 
+                {
+                    /*Determinate current state of the game
+                    · 0 = start menu
+                    · 1 = playing
+                    · 2 = pause
+                    · 3 = game over menu*/
+                    gameState : 0,
+                    
+                    /*Determinate the dificulty
+                    It would be how fast is the snake moving (frameRate).
+                    · 1   = easy
+                    · 1.5 = medium
+                    · 2   = hard*/
+                    dificulty : 1,
+            
+                    //How many lives left
+                    lives : 3,
+            
+                    /*How many times can the player 
+                    lose until restart the game*/
+                    maxLives : 3,
+            
+                    //Score of the player
+                    score : 0
+                };
+                temp = 
+                {
+                    /*Store mouse position to create a vector and
+                    determine in which direction moved the mouse
+                    while pressed*/
+                    lastMouseX : 0,
+                    lastMouseY : 0
+                };
+            }
+
+            function keyPressed()
+            {
+                //If we are playing, control the snake
+                switch (gameVariable.gameState)
+                {
+                    case 1:
+                        /*Depending which key is pressed, the snake speed is changed.
+                        If the snake is moving along the X axis, the player should 
+                        not be able to move more on the X axis. The snake can only
+                        be moved perpendicularly*/
+                        switch (keyCode)
+                        {
+                            case LEFT_ARROW:  snakeControl("x", -1,  0); break;
+                            case RIGHT_ARROW: snakeControl("x",  1,  0); break;
+                            case DOWN_ARROW:  snakeControl("y",  0,  1); break;
+                            case UP_ARROW:    snakeControl("y",  0, -1); break;
+                            case 32: gameVariable.gameState = 2; //Pause
+                        }
+                        break;
+                    case 2: if (keyCode === 32) gameVariable.gameState = 1;//Continue playing
+                }
+                return false;
+            }
+
+            function mousePressed()
+            {
+                /*Only if the mouse is on the canvas & playing,
+                store the position when the clic starts*/
+                if (mouseX >= 0 && mouseX <= width  &&
+                    mouseY >= 0 && mouseY <= height &&
+                    gameVariable.gameState === 1)
+                {
+                    temp.lastMouseX = mouseX;
+                    temp.lastMouseY = mouseY;
+                }
+                return false;
+            }
+
+            function mouseReleased()
+            {
+                /*Only if the mouse is on the canvas & playing,
+                control the snake*/
+                if (mouseX >= 0 && mouseX <= width  &&
+                    mouseY >= 0 && mouseY <= height &&
+                    gameVariable.gameState === 1)
+                {
+                    //Create a vector of the mouse movement while pressed
+                    let movement = createVector(mouseX - temp.lastMouseX, mouseY - temp.lastMouseY);
+                    /*We only need to move in one axis, so we determinate
+                    which axis had more movement*/
+                    if (abs(movement.x) > abs(movement.y))
+                        if      (movement.x < 0) snakeControl("x", -1, 0);
+                        else if (movement.x > 0) snakeControl("x",  1, 0);
+                    if (abs(movement.x) < Math.abs(movement.y))
+                        if      (movement.y < 0) snakeControl("y", 0, -1);
+                        else if (movement.y > 0) snakeControl("y", 0,  1);
+                }
+                return false;
+            }
+
+            /**Clean the game variables & objects*/
+            function clearAll()
+            {
+                gameVariable.score = 0;
+                gameVariable.lives = gameVariable.maxLives;
+                game.snake.clear();
+                game.food .clear();
+                gui.start .clear();
+                gui.over  .clear();
+            }
+
+            /**Control the snake: isX determine in which axis we are moving*/
+            function snakeControl(isX, x, y)
+            {
+                switch (isX)
+                {
+                    case "x": 
+                        if ((game.snake.xspeed === 0 && game.snake.yspeed === 0) || game.snake.yspeed != 0)
+                            game.snake.setSpeed(x, y); 
+                        break;
+                    case "y": 
+                        if ((game.snake.xspeed === 0 && game.snake.yspeed === 0) || game.snake.xspeed != 0)
+                            game.snake.setSpeed(x, y);
+                }
+            }
+
+            /**Default configuration for a button*/
+            function setButton(b, text)
+            {
+                b.setText(text);
+                b.setTextColor(color(255), 30);
+                b.setRolloverTextColor(color(255, 255, 100));
+                b.setPressedTextColor(color(255, 0, 0));
+
+                b.setColor(false);
+                b.setRolloverColor(false);
+                b.setPressedColor(false);
+
+                b.setStroke(true, 5, color(255));
+                b.setRolloverStroke(true, 7, color(255, 255, 100));
+                b.setPressedStroke(true, 7, color(255, 0, 0));
+            }
+
+            /**Set the default configuration for the render*/
+            function setDefaultConfiguration()
+            {
+                textAlign(LEFT, CENTER);
+                textFont("Consolas");
+                textSize(30);
+                textStyle(NORMAL);
+            
+                fill(100);
+                
+                stroke(30);
+                strokeWeight(5);
+                strokeCap(SQUARE);
+                strokeJoin(MITER);
+            
+                noSmooth();
+                rectMode(CORNER);
+            }
+            
+            class Button
+            {
+                constructor ()
+                {
+                    this.isPressed = -1;
+
+                    this.setText("Hello World!");
+                    this.setBounds(0, 0);
+                    this.setFont("Calibri");
+                    this.setTextColor(color(0));
+                    this.setRolloverTextColor(color(0));
+                    this.setPressedTextColor(color(0));
+
+                    this.setColor(true);
+                    this.setRolloverColor(true);
+                    this.setPressedColor(true);
+
+                    this.setStroke(true);
+                    this.setRolloverStroke(true);
+                    this.setPressedStroke(true);
+                }
+                setBounds(x, y, w = textWidth(this.text), h = textAscent() + textDescent())
+                {
+                    this.x = x; 
+                    this.y = y;
+                    this.w = w;
+                    this.h = h;
+                }
+                setText(text) {this.text = text}
+                setFont              (font)    {this.textFont= font;}
+                setTextColor         (c, s=12)              {this.textColor         = c; this.textSize         = s;}
+                setRolloverTextColor (c, s=this.textSize+2) {this.textRolloverColor = c; this.textRolloverSize = s;}
+                setPressedTextColor  (c, s=this.textSize+2) {this.textPressedColor  = c; this.textPressedSize  = s;}
+
+                setColor         (f, c=color(200)) {this.fillBackground = f; this.colorBackground = c;}
+                setRolloverColor (f, c=color(255)) {this.rolloverFill   = f; this.rolloverColor   = c;}
+                setPressedColor  (f, c=color(255)) {this.pressedFill    = f; this.pressedColor    = c;}
+                
+                setStroke         (f, s=1, c=color(0))                 {this.strokeBackground = f; this.strokeSize         = s; this.strokeColor         = c;}
+                setRolloverStroke (f, s=this.strokeSize+2, c=color(0)) {this.rolloverStroke   = f; this.rolloverStrokeSize = s; this.rolloverStrokeColor = c;}
+                setPressedStroke  (f, s=this.strokeSize+2, c=color(0)) {this.pressedStroke    = f; this.pressedStrokeSize  = s; this.pressedStrokeColor  = c;}
+
+                render()
+                {
+                    smooth();
+                    rectMode(CENTER);
+                    let setBackgroundButtonStyle = function(f, c)
+                    {
+                        if (f === false) noFill();
+                        else if (f === true) fill(c);
+                        else throw " param error";
+                    }
+                    let setStrokeButtonStyle = function(f, s, c)
+                    {
+                        if (f === false) noStroke();
+                        else if (f === true)
+                        {
+                            stroke(c);
+                            strokeWeight(s);
+                            strokeCap(SQUARE);
+                            strokeJoin(MITER);
+                        }
+                        else throw " param error";
+                    }
+                    let setTextButtonStyle = function(font, s, c)
+                    {
+                        noStroke();
+                        textAlign(CENTER, CENTER);
+                        textSize(s);
+                        textStyle(NORMAL);
+                        fill(c);
+                        textFont(font);
+                    }
+
+                    if (mouseX >= this.x - this.w/2 && mouseX <= this.x + this.w/2 &&
+                        mouseY >= this.y - this.h/2 && mouseY <= this.y + this.h/2)
+                    {
+                        if (mouseIsPressed)
+                        {
+                            this.isPressed = 0;
+                            setBackgroundButtonStyle(this.pressedFill, this.pressedColor);
+                            setStrokeButtonStyle(this.pressedStroke, this.pressedStrokeSize, this.pressedStrokeColor);
+                            rect(this.x, this.y, this.w, this.h);
+                            setTextButtonStyle(this.textFont, this.textPressedSize, this.textPressedColor);
+                            text(this.text, this.x, this.y);
+                        }
+                        else
+                        {
+                            if (this.isPressed === 0) this.isPressed = 1;
+                            else this.isPressed = -1;
+
+                            setBackgroundButtonStyle(this.rolloverFill, this.rolloverColor);
+                            setStrokeButtonStyle(this.rolloverStroke, this.rolloverStrokeSize, this.rolloverStrokeColor);
+                            rect(this.x, this.y, this.w, this.h);
+                            setTextButtonStyle(this.textFont, this.textRolloverSize, this.textRolloverColor);
+                            text(this.text, this.x, this.y);
+                        }
+                    }
+                    else
+                    {
+                        if (this.isPressed === 0) this.isPressed = 1;
+                        else this.isPressed = -1;
+                        
+                        setBackgroundButtonStyle(this.fillBackground, this.colorBackground);
+                        setStrokeButtonStyle(this.strokeBackground, this.strokeSize, this.strokeColor);
+                        rect(this.x, this.y, this.w, this.h);
+                        setTextButtonStyle(this.textFont, this.textSize, this.textColor);
+                        text(this.text, this.x, this.y);
+                    }
+                    return this.isPressed;
+                }
+            }
+
+            /**This object controls and renders the food*/
+            class Food
+            {
+                constructor() {this.clear();}
+                clear(){this.x = width/2; this.y = height/4;}
+                /**Generate a new random position*/
+                newPosition(s)
+                {
+                    /*Store the last positions to check later to 
+                    determinate if the new position is equal to the last one*/
+                    this.lastx = this.x;
+                    this.lasty = this.y;
+
+                    /*Generate a new position depending on the scale
+                    and the size of the canvas:
+                    · width /30 = number of columns
+                    · height/30 = number of rows
+                    Pick a random value between those and 0, and then
+                    set it into the grid (* 30)*/
+                    this.x = floor(random(width /30)) * 30;
+                    this.y = floor(random(height/30)) * 30;
+
+                    /*If the position generated is equal to the last
+                    one, or is touching the snake, then generate a 
+                    new position*/
+                    if (s.tailTouching(this.x, this.y) || this.lastx === this.x && this.lasty === this.y)
+                        this.newPosition();
+                }
+                render()
+                {
+                    setDefaultConfiguration();
+                    fill(255, 0, 0);
+                    square(this.x, this.y, 30);
+                }
+            }
+            
+            /**This object controls and renders the snake*/
+            class Snake
+            {
+                constructor (x=floor(width/2), y=floor(height/2), xs=0, ys=0) {this.clear(x, y, xs, ys);}
+                setSpeed    (x, y) {this.xspeed = x; this.yspeed = y;}
+                setPosition (x, y) {this.x = x; this.y = y;}
+                clear(x = floor(width/2), y = floor(height/2), xs=0, ys=0)
+                {
+                    this.setPosition(x, y);
+                    this.setSpeed(xs, ys);
+                    /*Determine if the snake is blinking after dead.
+                    · -1  = not blinking
+                    · 0   = start blinking
+                    · > 0 = if the number is even, the snake is shown, else not*/
+                    this.blink = -1;
+                    /*Tail of the snake is an array of the
+                    last positions of the head*/
+                    this.tail = [];
+                    //The tail of the snake starts with 1
+                    this.tail.unshift(createVector(this.x, this.y));
+                }
+
+                startBlink() {this.blink = 0;/*Start blinking, the render would do the rest*/}
+                /**Returns if the head it touching the tail*/
+                tailTouching(x, y)
+                {
+                    /*Initialite on false, and if it does not change,
+                    it means that we did not found any coordinates are
+                    equal to the head position in the tail array.*/
+                    let touching = false;
+                    /*At the begining of the game, the head and
+                    the tail are in the same position*/
+                    if (!(this.xspeed === 0 && this.yspeed === 0))
+                        for (let i = 0; !touching && i < this.tail.length; i++)
+                            if (this.tail[i].x === x && this.tail[i].y === y)
+                                touching = true;
+                    return touching;
+                }
+                move(xs, ys, addTail)
+                {
+                    //Add a new position to the tail
+                    if (addTail) this.tail.unshift(createVector(this.x, this.y));
+                    else //Update the snake, delete the last position to keep same length
+                    {
+                        this.tail.unshift(createVector(this.x, this.y));
+                        this.tail.pop();
+                    }
+                    //Update the head position
+                    this.x += xs * 30;
+                    this.y += ys * 30;
+                }
+                update(f)
+                {
+                    //If the game is not paused and it is not blinking
+                    if (this.blink === -1)
+                    {
+                        let newPosition = false;
+                        /*If the head position is equal to the food position (f);
+                        increase the score, indicate that a new food position is
+                        required and add a new part to the tail*/
+                        if (this.x === f.x && this.y === f.y)
+                        {
+                            newPosition = true;
+                            this.move(this.xspeed, this.yspeed, true);
+                        }
+                        else this.move(this.xspeed, this.yspeed, false);
+                        if (newPosition) return "position";
+                        if (this.tailTouching(this.x, this.y) ||
+                            this.x > width-1  || this.x < -1||
+                            this.y > height-1 || this.y < -1)
+                            return "dead";
+                    }
+                }
+                render()
+                {
+                    setDefaultConfiguration();
+                    fill(255);
+                    strokeWeight(3);
+
+                    let renderSnake = function(x, y, tail)
+                    {
+                        //Draw the head
+                        square(x, y, 30);
+                        //Draw the tail
+                        for (let i = 0; i < tail.length; i++)
+                            square(tail[i].x, tail[i].y, 30);
+                    };
+                    if (this.blink === -1) renderSnake(this.x, this.y, this.tail);
+                    else if (this.blink >= 0)
+                    {
+                        //Render the snake on the even frames
+                        if (this.blink%2 === 0) renderSnake(this.x, this.y, this.tail); 
+                        if (this.blink    <= 5) this.blink++;
+                        else if(this.blink > 5)
+                        {
+                            //Store the tail lenght and clean the snake
+                            let tailLenght = this.tail.length;
+                            this.clear();
+                            //Reset the tail to the head position
+                            for (let i = 0; i < tailLenght-1; i++) 
+                                this.tail.unshift(createVector(this.x, this.y));
+                        }
+                    }
+                }
+            }
+
+            /**Renders and controls the GUI while playing*/
+            class GameGUI
+            {
+                constructor()
+                {
+                    this.buttons = 
+                    {
+                        playAgain : new Button(),
+                        startMenu : new Button(),
+                        pause     : new Button()
+                    };
+                }
+
+                /**Render some information about the controls*/
+                renderControlInfo()
+                {
+                    //Render key shapes
+                    setDefaultConfiguration();
+                    noFill();
+                    stroke(100);
+                    square(width*1.5/2   , height/2-60 , 50);
+                    square(width*1.5/2   , height/2    , 50);
+                    square(width*1.5/2+60, height/2    , 50);
+                    square(width*1.5/2-60, height/2    , 50);
+
+                    //Render mouse lines of the arrows
+                    line(width / 4     , height / 2 - 30, width / 4     , height / 2 - 70);
+                    line(width / 4     , height / 2 + 30, width / 4     , height / 2 + 70);
+                    line(width / 4 - 30, height / 2     , width / 4 - 70, height / 2);
+                    line(width / 4 + 30, height / 2     , width / 4 + 70, height / 2);
+
+                    //Render key simbols
+                    noStroke();
+                    fill(100);
+                    triangle(width * 1.5 / 2 +  25, height / 2 - 50, 
+                            width * 1.5 / 2 +  10, height / 2 - 20, 
+                            width * 1.5 / 2 +  40, height / 2 - 20);
+                    triangle(width * 1.5 / 2 +  25, height / 2 + 40, 
+                            width * 1.5 / 2 +  10, height / 2 + 10, 
+                            width * 1.5 / 2 +  40, height / 2 + 10);
+                    triangle(width * 1.5 / 2 + 100, height / 2 + 25, 
+                            width * 1.5 / 2 +  70, height / 2 + 10, 
+                            width * 1.5 / 2 +  70, height / 2 + 40);
+                    triangle(width * 1.5 / 2 -  50, height / 2 + 25, 
+                            width * 1.5 / 2 -  20, height / 2 + 10, 
+                            width * 1.5 / 2 -  20, height / 2 + 40);
+
+                    //Render arrow heads
+                    triangle(width / 4     , height / 2 - 80, 
+                            width / 4 + 10, height / 2 - 70,
+                            width / 4 - 10, height / 2 - 70);
+                    triangle(width / 4     , height / 2 + 80, 
+                            width / 4 + 10, height / 2 + 70,
+                            width / 4 - 10, height / 2 + 70);
+                    triangle(width / 4 - 80, height / 2,
+                            width / 4 - 70, height / 2 - 10,
+                            width / 4 - 70, height / 2 + 10);
+                    triangle(width / 4 + 80, height / 2,
+                            width / 4 + 70, height / 2 - 10,
+                            width / 4 + 70, height / 2 + 10);
+
+                    //Render mouse representation
+                    circle(width/4, height/2, 20);
+                }
+
+                /**Render the GUI while playing*/
+                renderGame()
+                {
+                    setDefaultConfiguration();
+                    noStroke();
+
+                    //Render the lives display
+                    textAlign(RIGHT, TOP);
+                    text("Lives:" + gameVariable.lives, width - 30, 30);
+
+                    //Render the score display
+                    textAlign(LEFT, TOP);
+                    text("Score: " + gameVariable.score, 30, 30);
+
+                    //Render the dificulty display
+                    textAlign(RIGHT, BOTTOM);
+                    switch (gameVariable.dificulty)
+                    {
+                        case   1: text("EASY"  , width - 30, height - 30); break;
+                        case 1.5: text("MEDIUM", width - 30, height - 30); break;
+                        case   2: text("HARD"  , width - 30, height - 30);
+                    }
+                    //Set the continue button
+                    setButton(this.buttons.pause, "Pause");
+                    this.buttons.pause.setStroke(true, 5, color(100));
+                    this.buttons.pause.setTextColor(color(100), 30);
+                    this.buttons.pause.setBounds(100, height - 40, 150, 40);
+
+                    if (this.buttons.pause.render() === 1) return "pause";
+                }
+
+                /**Render the GUI of the pause menu*/
+                renderPause()
+                {
+                    setDefaultConfiguration();
+                    noStroke();
+                    
+                    //Render pause message
+                    textSize(60);
+                    textStyle(BOLD);
+                    textAlign(CENTER, CENTER)
+                    text("Pause", width/2, height/2);
+
+                    //Store any event of the buttons
+                    let event;
+
+                    //Set the continue button
+                    setButton(this.buttons.pause, "Continue");
+                    this.buttons.pause.setStroke(true, 5, color(100));
+                    this.buttons.pause.setTextColor(color(100), 30);
+                    this.buttons.pause.setBounds(width/2, (height*2.5)/4, 150, 40);
+
+                    if (this.buttons.pause.render() === 1) event = "continue";
+
+
+                    //Set the play again button
+                    setButton(this.buttons.playAgain, "Play again");
+                    this.buttons.playAgain.setStroke(true, 5, color(100));
+                    this.buttons.playAgain.setTextColor(color(100), 30);
+                    this.buttons.playAgain.setBounds(100, height - 40, 150, 40);
+
+                    if (this.buttons.playAgain.render() === 1) event = "play";
+
+                    //Set the return to menu button
+                    setButton(this.buttons.startMenu, "Return to menu");
+                    this.buttons.startMenu.setStroke(true, 5, color(100));
+                    this.buttons.startMenu.setTextColor(color(100), 30);
+                    this.buttons.startMenu.setBounds(width - 140, height - 40, 230, 40);
+
+                    if (this.buttons.startMenu.render() === 1) event = "menu";
+
+                    return event;
+                }
+            }
+
+            /**Renders and controls the game over menu*/
+            class GameOverMenu
+            {
+                constructor () 
+                {
+                    this.clear();
+                    this.buttons =
+                    {
+                        playAgain : new Button(),
+                        startMenu : new Button()
+                    };
+                }
+                clear       () {this.iterator = 0;}
+
+                /**Render the game over menu*/
+                render()
+                {
+                    setDefaultConfiguration();
+                    noStroke();
+
+                    this.iterator += 10;
+
+                    //Principal function to set text
+                    let renderText = function(t, x, y, s, c)
+                    {
+                        textSize(s);
+                        fill(c);
+                        text(t, x, y);
+                    }
+
+                    //Render the GAME OVER text
+                    if (height - this.iterator > 60)
+                        renderText("GAME OVER", 30, height - this.iterator, 60, color(200, 0, 0));
+                    //Render what was before and the RESULTS text
+                    else if (height * 2 - this.iterator > 60*2)
+                    {
+                        renderText("GAME OVER", 30, 60, 60, color(200, 0, 0));
+                        renderText("Results", 50, height*2 - this.iterator, 50, color(200, 200, 100));
+                    }
+                    //Render what was before and the LIVES USED message
+                    else if (height * 3 - this.iterator > 60*3)
+                    {
+                        renderText("GAME OVER", 30,  60, 60, color(200,   0,   0));
+                        renderText("Results"  , 50, 120, 50, color(200, 200, 100));
+                        renderText("Lives used: " + gameVariable.maxLives, 100, height*3-this.iterator, 30, color(200));
+                    }
+                    //Render what was before and the SCORE message
+                    else if (height * 4 - this.iterator > 60*4)
+                    {
+                        renderText("GAME OVER", 30,  60, 60, color(200,   0,   0));
+                        renderText("Results"  , 50, 120, 50, color(200, 200, 100));
+                        renderText("Lives used: " + gameVariable.maxLives, 100, 60*3, 30, color(200));
+                        renderText("Score: "      + gameVariable.score   , 100, height*4-this.iterator, 30, color(200));
+                    }
+                    //Render what was before and the DIFICULTY message
+                    else if (height * 5 - this.iterator > 60*5)
+                    {
+                        renderText("GAME OVER", 30,  60, 60, color(200,   0,   0));
+                        renderText("Results"  , 50, 120, 50, color(200, 200, 100));
+                        renderText("Lives used: " + gameVariable.maxLives, 100, 60*3, 30, color(200));
+                        renderText("Score: "      + gameVariable.score   , 100, 60*4, 30, color(200));
+                        switch (gameVariable.dificulty)
+                        {
+                            case   1: renderText("Dificulty: EASY"  , 100, height*5-this.iterator, 30, color(200)); break;
+                            case 1.5: renderText("Dificulty: MEDIUM", 100, height*5-this.iterator, 30, color(200)); break;
+                            case   2: renderText("Dificulty: HARD"  , 100, height*5-this.iterator, 30, color(200));
+                        }
+                    }
+                    //Render all of them
+                    else
+                    {
+                        renderText("GAME OVER", 30,  60, 60, color(200,   0,   0));
+                        renderText("Results"  , 50, 120, 50, color(200, 200, 100));
+                        renderText("Lives used: " + gameVariable.maxLives, 100, 60*3, 30, color(200));
+                        renderText("Score: "      + gameVariable.score   , 100, 60*4, 30, color(200));
+                        switch (gameVariable.dificulty)
+                        {
+                            case   1: renderText("Dificulty: EASY"  , 100, 60*5, 30, color(200)); break;
+                            case 1.5: renderText("Dificulty: MEDIUM", 100, 60*5, 30, color(200)); break;
+                            case   2: renderText("Dificulty: HARD"  , 100, 60*5, 30, color(200));
+                        }
+                    }
+                    //Render the opction buttons
+                    if (height * 6 - this.iterator < 60*6)
+                    {
+                        //Store any event of a button
+                        let event;
+
+                        //Set the play again button
+                        setButton(this.buttons.playAgain, "Play again");
+                        this.buttons.playAgain.setBounds(100, height - 40, 150, 40);
+
+                        if (this.buttons.playAgain.render() === 1) event = "play";
+
+                        //Set the return to menu button
+                        setButton(this.buttons.startMenu, "Return to menu");
+                        this.buttons.startMenu.setBounds(width - 140, height - 40, 230, 40);
+
+                        if (this.buttons.startMenu.render() === 1) event = "menu";
+
+                        return event;
+                    }
+                }
+            }
+
+            /**Renders and controls the start menu*/
+            class StartMenu
+            {
+                constructor()
+                {
+                    //Count the frames to make the animation
+                    this.iterator = -4;
+
+                    //Objects needed for the animation
+                    this.snakeTitle = 
+                    {
+                        s  : new Snake(),
+                        n  : new Snake(),
+                        k1 : new Snake(),
+                        k2 : new Snake(),
+                        e  : new Snake(),
+                        e2 : new Snake()
+                    };
+
+                    //Buttons of the start menu
+                    this.buttons = 
+                    {
+                        playButton      : new Button(),
+                        lessLivesButton : new Button(),
+                        moreLivesButton : new Button(),
+                        changeDificulty : new Button()
+                    };
+                }
+
+                /**Clean and leave the object as initialy*/
+                clear()
+                {
+                    this.iterator = -4;
+                    this.snakeTitle.s .clear();
+                    this.snakeTitle.n .clear();
+                    this.snakeTitle.k1.clear();
+                    this.snakeTitle.k2.clear();
+                    this.snakeTitle.e .clear();
+                    this.snakeTitle.e2.clear();
+                }
+
+                /**Shows up the start menu*/
+                render()
+                {
+                    this.iterator++;
+
+                    //Snake animation
+                    switch(this.iterator)
+                    {
+                        case -3:
+                            /*I use this notation (30*n) to understand easily
+                            in which position is situated (being n the number
+                            of columns/rows)*/
+                            this.snakeTitle.s .setPosition(30 *  4, 30    ); //Default
+                            this.snakeTitle.n .setPosition(30 *  6, 30 * 4);
+                            this.snakeTitle.k1.setPosition(30 * 11, 30    );
+                            this.snakeTitle.k2.setPosition(30 *  4, 30    );
+                            this.snakeTitle.e .setPosition(30 * 18, 30    );
+                            this.snakeTitle.e2.setPosition(30 *  4, 30    );
+                            
+                            //Snake starts with an element on the tail
+                            this.snakeTitle.s .tail.pop();
+                            this.snakeTitle.n .tail.pop();
+                            this.snakeTitle.k1.tail.pop();
+                            this.snakeTitle.k2.tail.pop();
+                            this.snakeTitle.e .tail.pop();
+                            this.snakeTitle.e2.tail.pop();
+                            break;
+                        case 1: case 2:
+                            this.snakeTitle.e .move(-1,  0, true);
+                        case 3:
+                            this.snakeTitle.s .move(-1,  0, true);
+                            this.snakeTitle.n .move( 0, -1, true);
+                            this.snakeTitle.k1.move( 0,  1, true);
+                            break;
+                        case 4: case 5: case 6:
+                            this.snakeTitle.s .move( 0,  1, true);
+                            this.snakeTitle.n .move( 1,  1, true);
+                            this.snakeTitle.k1.move( 1, -1, true);
+                            this.snakeTitle.k2.setPosition(30 * 11, 30 * 5);
+                            this.snakeTitle.e .move( 0,  1, true);
+                            break;
+                        case 7: case 8: case 9:
+                            this.snakeTitle.s .move( 1,  0, true);
+                            this.snakeTitle.n .move( 0, -1, true);
+                            this.snakeTitle.k2.move( 0, -1, true);
+                            this.snakeTitle.e .move( 0,  1, true);
+                            break;
+                        case 10: case 11:
+                            this.snakeTitle.e.move( 1,  0, true);
+                            this.snakeTitle.e2.setPosition(30 * 16, 30 * 4);
+                        case 12:
+                            this.snakeTitle.s .move(0, 1, true);
+                            this.snakeTitle.k2.move(1, 1, true);
+                            this.snakeTitle.e2.move(1, 0, true);
+                            break;
+                        case 13: case 14: case 15:
+                            this.snakeTitle.s.move(-1, 0, true);
+                    }
+
+                    //Render the snakes
+                    if (this.iterator >= 0)
+                    {
+                        this.snakeTitle.s .render();
+                        this.snakeTitle.n .render();
+                        this.snakeTitle.k1.render();
+                        this.snakeTitle.k2.render();
+                        this.snakeTitle.e .render();
+                        this.snakeTitle.e2.render();
+                    }
+
+                    //Store any event of the buttons
+                    let event;
+
+                    //Render play button
+                    if (this.iterator >= 25)
+                    {
+                        setButton(this.buttons.playButton, "Play");
+                        this.buttons.playButton.setBounds(width/2, 30*16, width/3, 40);
+
+                        if(this.buttons.playButton.render() === 1) event = "play";
+                    }
+
+                    //Render max Lives configuration
+                    if (this.iterator >= 35)
+                    {
+                        setDefaultConfiguration();
+                        noStroke();
+                        fill(255);
+
+                        //Render maxLives indicator
+                        text("Lives: " + gameVariable.maxLives, 30, height - 30);
+
+                        //Render less lives button
+                        setButton(this.buttons.lessLivesButton, "-");
+                        this.buttons.lessLivesButton.setBounds(30 * 7, height - 30, 30, 30);
+
+                        if (this.buttons.lessLivesButton.render() === 1) event = "-lives";
+
+                        //Render more lives button
+                        setButton(this.buttons.moreLivesButton, "+");
+                        this.buttons.moreLivesButton.setBounds(30 * 8 + 8, height - 30, 30, 30);
+
+                        if (this.buttons.moreLivesButton.render() === 1) event = "+lives";
+                    }
+
+                    //Render dificulty configuration
+                    if (this.iterator >= 45)
+                    {
+                        switch (gameVariable.dificulty)
+                        {
+                            case   1: setButton(this.buttons.changeDificulty, "EASY"  ); break;
+                            case 1.5: setButton(this.buttons.changeDificulty, "MEDIUM"); break;
+                            case   2: setButton(this.buttons.changeDificulty, "HARD"  );
+                        }
+                        this.buttons.changeDificulty.setBounds(width - 100, height - 35, 150, 35);
+
+                        if (this.buttons.changeDificulty.render() === 1) event = "dif";
+                    }
+                    return event;
+                }
+            }
+
+            /**
+             * Depending on the gameState draw the game
+             * 
+             * This is the main script:
+             *  · Draw the new frames
+             *  · Button event control
+             *  · Update game variables and objects
+             */
+            function draw()
+            {
+                background(30);
+
+                switch(gameVariable.gameState)
+                {
+                    //Start menu
+                    case 0:
+                        frameRate(15);
+
+                        switch (gui.start.render())
+                        {
+                            //Start to play
+                            case "play":
+                                gameVariable.lives = gameVariable.maxLives;
+                                gameVariable.gameState = 1;
+                                break;
+
+                            //Change max lives
+                            case "+lives": if (gameVariable.maxLives < 5) gameVariable.maxLives++; break;
+                            case "-lives": if (gameVariable.maxLives > 1) gameVariable.maxLives--; break;
+
+                            //Change dificulty
+                            case "dif":
+                                switch(gameVariable.dificulty)
+                                {
+                                    case   1: gameVariable.dificulty = 1.5; break;
+                                    case 1.5: gameVariable.dificulty =   2; break;
+                                    case   2: gameVariable.dificulty =   1;
+                                }
+                        }
+                        break;
+
+                    //Playing
+                    case 1:
+                        frameRate(4 * gameVariable.dificulty);
+
+                        //Show controls if the player has not started yet
+                        if (gameVariable.score === 0 && gameVariable.lives === gameVariable.maxLives)
+                            gui.game.renderControlInfo();
+                        
+                        //Check if it is dead or need to generate a new position 
+                        switch (game.snake.update(game.food))
+                        {
+                            case "dead":
+                                gameVariable.lives--;
+                                game.snake.startBlink();
+                                if (gameVariable.lives <= 0) gameVariable.gameState = 3; //Game over
+                                break;
+                            case "position":
+                                gameVariable.score++;
+                                game.food.newPosition(game.snake);
+                        }
+                        if (gui.game.renderGame() == "pause") gameVariable.gameState = 2;
+                        game.food .render();
+                        game.snake.render();
+                        break;
+
+                    //Pause menu
+                    case 2:
+                        frameRate(30);
+                        game.snake.render();
+                        game.food .render();
+                        switch (gui.game.renderPause())
+                        {
+                            case "continue": gameVariable.gameState = 1; break;
+                            case "play": gameVariable.gameState = 1; clearAll(); break;
+                            case "menu": gameVariable.gameState = 0; clearAll();
+                        }
+                        break;
+
+                    //Game over menu
+                    case 3:
+                        frameRate(30);
+
+                        //Start again or return to menu
+                        switch (gui.over.render())
+                        {
+                            case "play": gameVariable.gameState = 1; clearAll(); break;
+                            case "menu": gameVariable.gameState = 0; clearAll();
+                        }
+                }
+            }
+        </script>
+    </body>
+</html>

@@ -59,7 +59,7 @@ function draw()
                     gameVariable.score++;
                     game.food.newPosition(game.snake);
             }
-            gui.game  .renderGame();
+            if (gui.game.renderGame() == "pause") gameVariable.gameState = 2;
             game.food .render();
             game.snake.render();
             break;
@@ -71,6 +71,7 @@ function draw()
             game.food .render();
             switch (gui.game.renderPause())
             {
+                case "continue": gameVariable.gameState = 1; break;
                 case "play": gameVariable.gameState = 1; clearAll(); break;
                 case "menu": gameVariable.gameState = 0; clearAll();
             }

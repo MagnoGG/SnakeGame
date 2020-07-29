@@ -2,10 +2,14 @@
 Classic arcade game where you have to eat to increase the score and avoid colliding with your own tail.
 Created with [p5.js library](https://p5js.org/)!
 
-## Note
-This proyect is not finish yet. Wait for updates!
+**Note**: This proyect is not finish yet. Wait for updates!
 
 ## Update information
+### **v1.1** - 3rd commit
+* Bug fixed: control the snake with the mouse/finger was not working properly.
+* Now you can access to the pause menu by pressing the new button.
+* Now the buttons on the pause menu match with the style of the menu.
+* Added new file: `SnkeGame-complete.html`. This new file contains all the game, and it is the only file needed to run it (include all the code). This is also the file needed to run the program on mobile.
 ### **v1.0** - 2nd commit
 * New features:
     * The start animation happens x3 faster.

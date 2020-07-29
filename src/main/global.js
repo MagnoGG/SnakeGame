@@ -122,7 +122,7 @@ function mouseReleased()
         if (abs(movement.x) > abs(movement.y))
             if      (movement.x < 0) snakeControl("x", -1, 0);
             else if (movement.x > 0) snakeControl("x",  1, 0);
-        else if (abs(movement.x) < Math.abs(movement.y))
+        if (abs(movement.x) < abs(movement.y))
             if      (movement.y < 0) snakeControl("y", 0, -1);
             else if (movement.y > 0) snakeControl("y", 0,  1);
     }

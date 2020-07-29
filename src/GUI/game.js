@@ -6,7 +6,8 @@ class GameGUI
         this.buttons = 
         {
             playAgain : new Button(),
-            startMenu : new Button()
+            startMenu : new Button(),
+            pause     : new Button()
         };
     }
 
@@ -84,6 +85,14 @@ class GameGUI
             case 1.5: text("MEDIUM", width - 30, height - 30); break;
             case   2: text("HARD"  , width - 30, height - 30);
         }
+
+        //Set the continue button
+        setButton(this.buttons.pause, "Pause");
+        this.buttons.pause.setStroke(true, 5, color(100));
+        this.buttons.pause.setTextColor(color(100), 30);
+        this.buttons.pause.setBounds(100, height - 40, 150, 40);
+
+        if (this.buttons.pause.render() === 1) return "pause";
     }
 
     /**Render the GUI of the pause menu*/
@@ -91,27 +100,36 @@ class GameGUI
     {
         setDefaultConfiguration();
         noStroke();
-
-        //Render message to continue
-        textAlign(CENTER, CENTER);
-        text("To continue press SPACE...", width/2, (height*2.5)/4);
         
         //Render pause message
         textSize(60);
         textStyle(BOLD);
+        textAlign(CENTER, CENTER)
         text("Pause", width/2, height/2);
 
         //Store any event of the buttons
         let event;
 
+        //Set the continue button
+        setButton(this.buttons.pause, "Continue");
+        this.buttons.pause.setStroke(true, 5, color(100));
+        this.buttons.pause.setTextColor(color(100), 30);
+        this.buttons.pause.setBounds(width/2, (height*2.5)/4, 150, 40);
+
+        if (this.buttons.pause.render() === 1) event = "continue";
+
         //Set the play again button
         setButton(this.buttons.playAgain, "Play again");
+        this.buttons.playAgain.setStroke(true, 5, color(100));
+        this.buttons.playAgain.setTextColor(color(100), 30);
         this.buttons.playAgain.setBounds(100, height - 40, 150, 40);
 
         if (this.buttons.playAgain.render() === 1) event = "play";
 
         //Set the return to menu button
         setButton(this.buttons.startMenu, "Return to menu");
+        this.buttons.startMenu.setStroke(true, 5, color(100));
+        this.buttons.startMenu.setTextColor(color(100), 30);
         this.buttons.startMenu.setBounds(width - 140, height - 40, 230, 40);
 
         if (this.buttons.startMenu.render() === 1) event = "menu";

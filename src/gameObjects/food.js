@@ -13,12 +13,12 @@ class Food
 
         /*Generate a new position depending on the scale
         and the size of the canvas:
-          · width /30 = number of columns
-          · height/30 = number of rows
+          · width /scale = number of columns
+          · height/scale = number of rows
         Pick a random value between those and 0, and then
-        set it into the grid (* 30)*/
-        this.x = floor(random(width /30)) * 30;
-        this.y = floor(random(height/30)) * 30;
+        set it into the grid (* scale)*/
+        this.x = floor(random(width /scale)) * scale;
+        this.y = floor(random(height/scale)) * scale;
 
         /*If the position generated is equal to the last
         one, or is touching the snake, then generate a 
@@ -30,6 +30,6 @@ class Food
     {
         setDefaultConfiguration();
         fill(255, 0, 0);
-        square(this.x, this.y, 30);
+        square(this.x, this.y, scale);
     }
 }

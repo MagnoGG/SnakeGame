@@ -48,15 +48,15 @@ class StartMenu
         switch(this.iterator)
         {
             case -3:
-                /*I use this notation (30*n) to understand easily
+                /*I use this notation (scale*n) to understand easily
                 in which position is situated (being n the number
                 of columns/rows)*/
-                this.snakeTitle.s .setPosition(30 *  4, 30    ); //Default
-                this.snakeTitle.n .setPosition(30 *  6, 30 * 4);
-                this.snakeTitle.k1.setPosition(30 * 11, 30    );
-                this.snakeTitle.k2.setPosition(30 *  4, 30    );
-                this.snakeTitle.e .setPosition(30 * 18, 30    );
-                this.snakeTitle.e2.setPosition(30 *  4, 30    );
+                this.snakeTitle.s .setPosition(scale *  4, scale    ); //Default
+                this.snakeTitle.n .setPosition(scale *  6, scale * 4);
+                this.snakeTitle.k1.setPosition(scale * 11, scale    );
+                this.snakeTitle.k2.setPosition(scale *  4, scale    );
+                this.snakeTitle.e .setPosition(scale * 18, scale    );
+                this.snakeTitle.e2.setPosition(scale *  4, scale    );
                 
                 //Snake starts with an element on the tail
                 this.snakeTitle.s .tail.pop();
@@ -77,7 +77,7 @@ class StartMenu
                 this.snakeTitle.s .move( 0,  1, true);
                 this.snakeTitle.n .move( 1,  1, true);
                 this.snakeTitle.k1.move( 1, -1, true);
-                this.snakeTitle.k2.setPosition(30 * 11, 30 * 5);
+                this.snakeTitle.k2.setPosition(scale * 11, scale * 5);
                 this.snakeTitle.e .move( 0,  1, true);
                 break;
             case 7: case 8: case 9:
@@ -88,7 +88,7 @@ class StartMenu
                 break;
             case 10: case 11:
                 this.snakeTitle.e.move( 1,  0, true);
-                this.snakeTitle.e2.setPosition(30 * 16, 30 * 4);
+                this.snakeTitle.e2.setPosition(scale * 16, scale * 4);
             case 12:
                 this.snakeTitle.s .move(0, 1, true);
                 this.snakeTitle.k2.move(1, 1, true);
@@ -116,7 +116,7 @@ class StartMenu
         if (this.iterator >= 25)
         {
             setButton(this.buttons.playButton, "Play");
-            this.buttons.playButton.setBounds(width/2, 30*16, width/3, 40);
+            this.buttons.playButton.setBounds(width/2, scale*16, width/3, scale*4/3);
 
             if(this.buttons.playButton.render() === 1) event = "play";
         }
@@ -129,17 +129,17 @@ class StartMenu
             fill(255);
 
             //Render maxLives indicator
-            text("Lives: " + gameVariable.maxLives, 30, height - 30);
+            text("Lives: " + gameVariable.maxLives, scale, height - scale);
 
             //Render less lives button
             setButton(this.buttons.lessLivesButton, "-");
-            this.buttons.lessLivesButton.setBounds(30 * 7, height - 30, 30, 30);
+            this.buttons.lessLivesButton.setBounds(scale * 7, height - scale, scale, scale);
 
             if (this.buttons.lessLivesButton.render() === 1) event = "-lives";
 
             //Render more lives button
             setButton(this.buttons.moreLivesButton, "+");
-            this.buttons.moreLivesButton.setBounds(30 * 8 + 8, height - 30, 30, 30);
+            this.buttons.moreLivesButton.setBounds(scale * 8 + scale * 4 / 15, height - scale, scale, scale);
 
             if (this.buttons.moreLivesButton.render() === 1) event = "+lives";
         }
@@ -153,7 +153,7 @@ class StartMenu
                 case 1.5: setButton(this.buttons.changeDificulty, "MEDIUM"); break;
                 case   2: setButton(this.buttons.changeDificulty, "HARD"  );
             }
-            this.buttons.changeDificulty.setBounds(width - 100, height - 35, 150, 35);
+            this.buttons.changeDificulty.setBounds(width - scale * 10 / 3, height - scale * 35 / 30, scale * 15 / 3, scale* 35 / 30);
 
             if (this.buttons.changeDificulty.render() === 1) event = "dif";
         }

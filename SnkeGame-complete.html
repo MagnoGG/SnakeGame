@@ -4,10 +4,10 @@
         <title>Snke-Game</title>
         <meta charset="utf-8"/>
     </header>
-    <body style="width: 600px; margin: 5px auto; background-color: #8BED8F; padding: 0px 20px 0px 20px; border: 3px solid black;">
-        <h1 style="font-size: 27px; text-align: center; font-family: 'Courier New', Courier, monospace;">Snke-Game!</h1>
-        <div id = "game"></div>
-        <p id = "credits" style="font-size: 12px; text-align: right; font-family: 'Courier New', Courier, monospace;">Created by: <a href="https://github.com/MagnoGG">MagnoGG</a></p>
+    <body style = "background-color: #8BED8F;">
+        <h1 style = "font-size: 27px; text-align: center; font-family: 'Courier New', Courier, monospace;">Snke-Game!</h1>
+        <p id = "credits" style="font-size: 12px; text-align: center; font-family: 'Courier New', Courier, monospace;">Created by: <a href="https://github.com/MagnoGG">MagnoGG</a></p>
+        <div id = "game" style = "width: 100%; text-align: center;"></div>
         <!-- Importing libraries -->
         <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.10.2/p5.js"></script>
         <!-- Main script -->
@@ -24,16 +24,21 @@
              */
             
             /**Global variables*/
+            let scale;
             let gameVariable;
             let gui;
             let game;
-            let temp
+            let temp;
             
             /**Set up the system, iniciate variables*/
             function setup()
             {
-                //Creating a canvas and linking it to the html
-                createCanvas(600, 600).parent("game");
+                /*Creating a canvas and linking it to the html
+                depending on the size of the window*/
+                if (windowWidth <= windowHeight)
+                    createCanvas(windowWidth - 120, windowWidth - 120).parent("game");
+                else if ((windowWidth > windowHeight))
+                    createCanvas(windowHeight - 120, windowHeight - 120).parent("game");
 
                 //Initialating
                 game = 
@@ -81,6 +86,15 @@
                     lastMouseX : 0,
                     lastMouseY : 0
                 };
+            }
+
+            function windowResized()
+            {
+                resizeCanvas();
+                if (windowWidth <= windowHeight)
+                    resizeCanvas(windowWidth - 120, windowWidth - 120);
+                else if ((windowWidth > windowHeight))
+                    resizeCanvas(windowHeight - 120, windowHeight - 120);
             }
 
             function keyPressed()
@@ -136,7 +150,7 @@
                     if (abs(movement.x) > abs(movement.y))
                         if      (movement.x < 0) snakeControl("x", -1, 0);
                         else if (movement.x > 0) snakeControl("x",  1, 0);
-                    if (abs(movement.x) < Math.abs(movement.y))
+                    if (abs(movement.x) < abs(movement.y))
                         if      (movement.y < 0) snakeControl("y", 0, -1);
                         else if (movement.y > 0) snakeControl("y", 0,  1);
                 }
@@ -173,7 +187,7 @@
             function setButton(b, text)
             {
                 b.setText(text);
-                b.setTextColor(color(255), 30);
+                b.setTextColor(color(255), scale);
                 b.setRolloverTextColor(color(255, 255, 100));
                 b.setPressedTextColor(color(255, 0, 0));
 
@@ -181,9 +195,9 @@
                 b.setRolloverColor(false);
                 b.setPressedColor(false);
 
-                b.setStroke(true, 5, color(255));
-                b.setRolloverStroke(true, 7, color(255, 255, 100));
-                b.setPressedStroke(true, 7, color(255, 0, 0));
+                b.setStroke        (true, scale * 5 / 30, color(255));
+                b.setRolloverStroke(true, scale * 7 / 30, color(255, 255, 100));
+                b.setPressedStroke (true, scale * 7 / 30, color(255, 0, 0));
             }
 
             /**Set the default configuration for the render*/
@@ -191,20 +205,159 @@
             {
                 textAlign(LEFT, CENTER);
                 textFont("Consolas");
-                textSize(30);
+                textSize(scale);
                 textStyle(NORMAL);
             
                 fill(100);
                 
-                stroke(30);
-                strokeWeight(5);
+                stroke(scale);
+                strokeWeight(scale * 5 / 30);
                 strokeCap(SQUARE);
                 strokeJoin(MITER);
             
                 noSmooth();
                 rectMode(CORNER);
             }
-            
+            /**This object controls and renders the food*/
+            class Food
+            {
+                constructor() {this.clear();}
+                clear(){this.x = width/2; this.y = height/4;}
+                /**Generate a new random position*/
+                newPosition(s)
+                {
+                    /*Store the last positions to check later to 
+                    determinate if the new position is equal to the last one*/
+                    this.lastx = this.x;
+                    this.lasty = this.y;
+
+                    /*Generate a new position depending on the scale
+                    and the size of the canvas:
+                    · width /scale = number of columns
+                    · height/scale = number of rows
+                    Pick a random value between those and 0, and then
+                    set it into the grid (* scale)*/
+                    this.x = floor(random(width /scale)) * scale;
+                    this.y = floor(random(height/scale)) * scale;
+
+                    /*If the position generated is equal to the last
+                    one, or is touching the snake, then generate a 
+                    new position*/
+                    if (s.tailTouching(this.x, this.y) || this.lastx === this.x && this.lasty === this.y)
+                        this.newPosition();
+                }
+                render()
+                {
+                    setDefaultConfiguration();
+                    fill(255, 0, 0);
+                    square(this.x, this.y, scale);
+                }
+            }
+                    /**This object controls and renders the snake*/
+            class Snake
+            {
+                constructor (x=floor(width/2), y=floor(height/2), xs=0, ys=0) {this.clear(x, y, xs, ys);}
+                setSpeed    (x, y) {this.xspeed = x; this.yspeed = y;}
+                setPosition (x, y) {this.x = x; this.y = y;}
+                clear(x = floor(width/2), y = floor(height/2), xs=0, ys=0)
+                {
+                    this.setPosition(x, y);
+                    this.setSpeed(xs, ys);
+                    /*Determine if the snake is blinking after dead.
+                    · -1  = not blinking
+                    · 0   = start blinking
+                    · > 0 = if the number is even, the snake is shown, else not*/
+                    this.blink = -1;
+                    /*Tail of the snake is an array of the
+                    last positions of the head*/
+                    this.tail = [];
+                    //The tail of the snake starts with 1
+                    this.tail.unshift(createVector(this.x, this.y));
+                }
+
+                startBlink() {this.blink = 0;/*Start blinking, the render would do the rest*/}
+                /**Returns if the head it touching the tail*/
+                tailTouching(x, y)
+                {
+                    /*Initialite on false, and if it does not change,
+                    it means that we did not found any coordinates are
+                    equal to the head position in the tail array.*/
+                    let touching = false;
+                    /*At the begining of the game, the head and
+                    the tail are in the same position*/
+                    if (!(this.xspeed === 0 && this.yspeed === 0))
+                        for (let i = 0; !touching && i < this.tail.length; i++)
+                            if (this.tail[i].x === x && this.tail[i].y === y)
+                                touching = true;
+                    return touching;
+                }
+                move(xs, ys, addTail)
+                {
+                    //Add a new position to the tail
+                    if (addTail) this.tail.unshift(createVector(this.x, this.y));
+                    else //Update the snake, delete the last position to keep same length
+                    {
+                        this.tail.unshift(createVector(this.x, this.y));
+                        this.tail.pop();
+                    }
+                    //Update the head position
+                    this.x += xs * scale;
+                    this.y += ys * scale;
+                }
+                update(f)
+                {
+                    //If the game is not paused and it is not blinking
+                    if (this.blink === -1)
+                    {
+                        let newPosition = false;
+                        /*If the head position is equal to the food position (f);
+                        increase the score, indicate that a new food position is
+                        required and add a new part to the tail*/
+                        if (this.x === f.x && this.y === f.y)
+                        {
+                            newPosition = true;
+                            this.move(this.xspeed, this.yspeed, true);
+                        }
+                        else this.move(this.xspeed, this.yspeed, false);
+                        if (newPosition) return "position";
+                        if (this.tailTouching(this.x, this.y) ||
+                            this.x > width-1  || this.x < -1||
+                            this.y > height-1 || this.y < -1)
+                            return "dead";
+                    }
+                }
+                render()
+                {
+                    setDefaultConfiguration();
+                    fill(255);
+                    strokeWeight(3);
+
+                    let renderSnake = function(x, y, tail)
+                    {
+                        //Draw the head
+                        square(x, y, scale);
+                        //Draw the tail
+                        for (let i = 0; i < tail.length; i++)
+                            square(tail[i].x, tail[i].y, scale);
+                    };
+                    if (this.blink === -1) renderSnake(this.x, this.y, this.tail);
+                    else if (this.blink >= 0)
+                    {
+                        //Render the snake on the even frames
+                        if (this.blink%2 === 0) renderSnake(this.x, this.y, this.tail); 
+                        if (this.blink    <= 5) this.blink++;
+                        else if(this.blink > 5)
+                        {
+                            //Store the tail lenght and clean the snake
+                            let tailLenght = this.tail.length;
+                            this.clear();
+                            //Reset the tail to the head position
+                            for (let i = 0; i < tailLenght-1; i++) 
+                                this.tail.unshift(createVector(this.x, this.y));
+                        }
+                    }
+                }
+            }
             class Button
             {
                 constructor ()
@@ -317,149 +470,6 @@
                     return this.isPressed;
                 }
             }
-
-            /**This object controls and renders the food*/
-            class Food
-            {
-                constructor() {this.clear();}
-                clear(){this.x = width/2; this.y = height/4;}
-                /**Generate a new random position*/
-                newPosition(s)
-                {
-                    /*Store the last positions to check later to 
-                    determinate if the new position is equal to the last one*/
-                    this.lastx = this.x;
-                    this.lasty = this.y;
-
-                    /*Generate a new position depending on the scale
-                    and the size of the canvas:
-                    · width /30 = number of columns
-                    · height/30 = number of rows
-                    Pick a random value between those and 0, and then
-                    set it into the grid (* 30)*/
-                    this.x = floor(random(width /30)) * 30;
-                    this.y = floor(random(height/30)) * 30;
-
-                    /*If the position generated is equal to the last
-                    one, or is touching the snake, then generate a 
-                    new position*/
-                    if (s.tailTouching(this.x, this.y) || this.lastx === this.x && this.lasty === this.y)
-                        this.newPosition();
-                }
-                render()
-                {
-                    setDefaultConfiguration();
-                    fill(255, 0, 0);
-                    square(this.x, this.y, 30);
-                }
-            }
-            
-            /**This object controls and renders the snake*/
-            class Snake
-            {
-                constructor (x=floor(width/2), y=floor(height/2), xs=0, ys=0) {this.clear(x, y, xs, ys);}
-                setSpeed    (x, y) {this.xspeed = x; this.yspeed = y;}
-                setPosition (x, y) {this.x = x; this.y = y;}
-                clear(x = floor(width/2), y = floor(height/2), xs=0, ys=0)
-                {
-                    this.setPosition(x, y);
-                    this.setSpeed(xs, ys);
-                    /*Determine if the snake is blinking after dead.
-                    · -1  = not blinking
-                    · 0   = start blinking
-                    · > 0 = if the number is even, the snake is shown, else not*/
-                    this.blink = -1;
-                    /*Tail of the snake is an array of the
-                    last positions of the head*/
-                    this.tail = [];
-                    //The tail of the snake starts with 1
-                    this.tail.unshift(createVector(this.x, this.y));
-                }
-
-                startBlink() {this.blink = 0;/*Start blinking, the render would do the rest*/}
-                /**Returns if the head it touching the tail*/
-                tailTouching(x, y)
-                {
-                    /*Initialite on false, and if it does not change,
-                    it means that we did not found any coordinates are
-                    equal to the head position in the tail array.*/
-                    let touching = false;
-                    /*At the begining of the game, the head and
-                    the tail are in the same position*/
-                    if (!(this.xspeed === 0 && this.yspeed === 0))
-                        for (let i = 0; !touching && i < this.tail.length; i++)
-                            if (this.tail[i].x === x && this.tail[i].y === y)
-                                touching = true;
-                    return touching;
-                }
-                move(xs, ys, addTail)
-                {
-                    //Add a new position to the tail
-                    if (addTail) this.tail.unshift(createVector(this.x, this.y));
-                    else //Update the snake, delete the last position to keep same length
-                    {
-                        this.tail.unshift(createVector(this.x, this.y));
-                        this.tail.pop();
-                    }
-                    //Update the head position
-                    this.x += xs * 30;
-                    this.y += ys * 30;
-                }
-                update(f)
-                {
-                    //If the game is not paused and it is not blinking
-                    if (this.blink === -1)
-                    {
-                        let newPosition = false;
-                        /*If the head position is equal to the food position (f);
-                        increase the score, indicate that a new food position is
-                        required and add a new part to the tail*/
-                        if (this.x === f.x && this.y === f.y)
-                        {
-                            newPosition = true;
-                            this.move(this.xspeed, this.yspeed, true);
-                        }
-                        else this.move(this.xspeed, this.yspeed, false);
-                        if (newPosition) return "position";
-                        if (this.tailTouching(this.x, this.y) ||
-                            this.x > width-1  || this.x < -1||
-                            this.y > height-1 || this.y < -1)
-                            return "dead";
-                    }
-                }
-                render()
-                {
-                    setDefaultConfiguration();
-                    fill(255);
-                    strokeWeight(3);
-
-                    let renderSnake = function(x, y, tail)
-                    {
-                        //Draw the head
-                        square(x, y, 30);
-                        //Draw the tail
-                        for (let i = 0; i < tail.length; i++)
-                            square(tail[i].x, tail[i].y, 30);
-                    };
-                    if (this.blink === -1) renderSnake(this.x, this.y, this.tail);
-                    else if (this.blink >= 0)
-                    {
-                        //Render the snake on the even frames
-                        if (this.blink%2 === 0) renderSnake(this.x, this.y, this.tail); 
-                        if (this.blink    <= 5) this.blink++;
-                        else if(this.blink > 5)
-                        {
-                            //Store the tail lenght and clean the snake
-                            let tailLenght = this.tail.length;
-                            this.clear();
-                            //Reset the tail to the head position
-                            for (let i = 0; i < tailLenght-1; i++) 
-                                this.tail.unshift(createVector(this.x, this.y));
-                        }
-                    }
-                }
-            }
-
             /**Renders and controls the GUI while playing*/
             class GameGUI
             {
@@ -480,49 +490,49 @@
                     setDefaultConfiguration();
                     noFill();
                     stroke(100);
-                    square(width*1.5/2   , height/2-60 , 50);
-                    square(width*1.5/2   , height/2    , 50);
-                    square(width*1.5/2+60, height/2    , 50);
-                    square(width*1.5/2-60, height/2    , 50);
+                    square(width*1.5/2          , height/2 - scale*2, scale*5/3);
+                    square(width*1.5/2          , height/2          , scale*5/3);
+                    square(width*1.5/2 + scale*2, height/2          , scale*5/3);
+                    square(width*1.5/2 - scale*2, height/2          , scale*5/3);
 
                     //Render mouse lines of the arrows
-                    line(width / 4     , height / 2 - 30, width / 4     , height / 2 - 70);
-                    line(width / 4     , height / 2 + 30, width / 4     , height / 2 + 70);
-                    line(width / 4 - 30, height / 2     , width / 4 - 70, height / 2);
-                    line(width / 4 + 30, height / 2     , width / 4 + 70, height / 2);
+                    line(width / 4        , height / 2 - scale, width / 4            , height / 2 - scale*7/3);
+                    line(width / 4        , height / 2 + scale, width / 4            , height / 2 + scale*7/3);
+                    line(width / 4 - scale, height / 2        , width / 4 - scale*7/3, height / 2);
+                    line(width / 4 + scale, height / 2        , width / 4 + scale*7/3, height / 2);
 
                     //Render key simbols
                     noStroke();
                     fill(100);
-                    triangle(width * 1.5 / 2 +  25, height / 2 - 50, 
-                            width * 1.5 / 2 +  10, height / 2 - 20, 
-                            width * 1.5 / 2 +  40, height / 2 - 20);
-                    triangle(width * 1.5 / 2 +  25, height / 2 + 40, 
-                            width * 1.5 / 2 +  10, height / 2 + 10, 
-                            width * 1.5 / 2 +  40, height / 2 + 10);
-                    triangle(width * 1.5 / 2 + 100, height / 2 + 25, 
-                            width * 1.5 / 2 +  70, height / 2 + 10, 
-                            width * 1.5 / 2 +  70, height / 2 + 40);
-                    triangle(width * 1.5 / 2 -  50, height / 2 + 25, 
-                            width * 1.5 / 2 -  20, height / 2 + 10, 
-                            width * 1.5 / 2 -  20, height / 2 + 40);
+                    triangle(width * 1.5 / 2 + scale*25/30, height / 2 - scale*5/3, 
+                            width * 1.5 / 2 + scale/3    , height / 2 - scale*2/3, 
+                            width * 1.5 / 2 + scale*4/3  , height / 2 - scale*2/3);
+                    triangle(width * 1.5 / 2 + scale*25/30, height / 2 + scale*4/3, 
+                            width * 1.5 / 2 + scale/3    , height / 2 + scale/3, 
+                            width * 1.5 / 2 + scale*4/3  , height / 2 + scale/3);
+                    triangle(width * 1.5 / 2 + scale*10/3 , height / 2 + scale*25/30, 
+                            width * 1.5 / 2 + scale*7/3  , height / 2 + scale/3, 
+                            width * 1.5 / 2 + scale*7/3  , height / 2 + scale*4/3);
+                    triangle(width * 1.5 / 2 - scale*5/3  , height / 2 + scale*25/30, 
+                            width * 1.5 / 2 - scale*2/3  , height / 2 + scale/3, 
+                            width * 1.5 / 2 - scale*2/3  , height / 2 + scale*4/3);
 
                     //Render arrow heads
-                    triangle(width / 4     , height / 2 - 80, 
-                            width / 4 + 10, height / 2 - 70,
-                            width / 4 - 10, height / 2 - 70);
-                    triangle(width / 4     , height / 2 + 80, 
-                            width / 4 + 10, height / 2 + 70,
-                            width / 4 - 10, height / 2 + 70);
-                    triangle(width / 4 - 80, height / 2,
-                            width / 4 - 70, height / 2 - 10,
-                            width / 4 - 70, height / 2 + 10);
-                    triangle(width / 4 + 80, height / 2,
-                            width / 4 + 70, height / 2 - 10,
-                            width / 4 + 70, height / 2 + 10);
+                    triangle(width / 4            , height / 2 - scale*8/3, 
+                            width / 4 + scale/3  , height / 2 - scale*7/3,
+                            width / 4 - scale/3  , height / 2 - scale*7/3);
+                    triangle(width / 4            , height / 2 + scale*8/3, 
+                            width / 4 + scale/3  , height / 2 + scale*7/3,
+                            width / 4 - scale/3  , height / 2 + scale*7/3);
+                    triangle(width / 4 - scale*8/3, height / 2,
+                            width / 4 - scale*7/3, height / 2 - scale/3,
+                            width / 4 - scale*7/3, height / 2 + scale/3);
+                    triangle(width / 4 + scale*8/3, height / 2,
+                            width / 4 + scale*7/3, height / 2 - scale/3,
+                            width / 4 + scale*7/3, height / 2 + scale/3);
 
                     //Render mouse representation
-                    circle(width/4, height/2, 20);
+                    circle(width/4, height/2, scale*2/3);
                 }
 
                 /**Render the GUI while playing*/
@@ -533,25 +543,26 @@
 
                     //Render the lives display
                     textAlign(RIGHT, TOP);
-                    text("Lives:" + gameVariable.lives, width - 30, 30);
+                    text("Lives:" + gameVariable.lives, width - scale, scale);
 
                     //Render the score display
                     textAlign(LEFT, TOP);
-                    text("Score: " + gameVariable.score, 30, 30);
+                    text("Score: " + gameVariable.score, scale, scale);
 
                     //Render the dificulty display
                     textAlign(RIGHT, BOTTOM);
                     switch (gameVariable.dificulty)
                     {
-                        case   1: text("EASY"  , width - 30, height - 30); break;
-                        case 1.5: text("MEDIUM", width - 30, height - 30); break;
-                        case   2: text("HARD"  , width - 30, height - 30);
+                        case   1: text("EASY"  , width - scale, height - scale); break;
+                        case 1.5: text("MEDIUM", width - scale, height - scale); break;
+                        case   2: text("HARD"  , width - scale, height - scale);
                     }
+
                     //Set the continue button
                     setButton(this.buttons.pause, "Pause");
-                    this.buttons.pause.setStroke(true, 5, color(100));
-                    this.buttons.pause.setTextColor(color(100), 30);
-                    this.buttons.pause.setBounds(100, height - 40, 150, 40);
+                    this.buttons.pause.setStroke(true, scale*5/30, color(100));
+                    this.buttons.pause.setTextColor(color(100), scale);
+                    this.buttons.pause.setBounds(scale*10/3, height - scale*4/3, scale*5, scale*4/3);
 
                     if (this.buttons.pause.render() === 1) return "pause";
                 }
@@ -563,7 +574,7 @@
                     noStroke();
                     
                     //Render pause message
-                    textSize(60);
+                    textSize(scale*2);
                     textStyle(BOLD);
                     textAlign(CENTER, CENTER)
                     text("Pause", width/2, height/2);
@@ -573,33 +584,31 @@
 
                     //Set the continue button
                     setButton(this.buttons.pause, "Continue");
-                    this.buttons.pause.setStroke(true, 5, color(100));
-                    this.buttons.pause.setTextColor(color(100), 30);
-                    this.buttons.pause.setBounds(width/2, (height*2.5)/4, 150, 40);
+                    this.buttons.pause.setStroke(true, scale*5/30, color(100));
+                    this.buttons.pause.setTextColor(color(100), scale);
+                    this.buttons.pause.setBounds(width/2, (height*2.5)/4, scale*5, scale*4/3);
 
                     if (this.buttons.pause.render() === 1) event = "continue";
 
-
                     //Set the play again button
                     setButton(this.buttons.playAgain, "Play again");
-                    this.buttons.playAgain.setStroke(true, 5, color(100));
-                    this.buttons.playAgain.setTextColor(color(100), 30);
-                    this.buttons.playAgain.setBounds(100, height - 40, 150, 40);
+                    this.buttons.playAgain.setStroke(true, scale*5/30, color(100));
+                    this.buttons.playAgain.setTextColor(color(100), scale);
+                    this.buttons.playAgain.setBounds(100, height - scale*4/3, scale*5, scale*4/3);
 
                     if (this.buttons.playAgain.render() === 1) event = "play";
 
                     //Set the return to menu button
                     setButton(this.buttons.startMenu, "Return to menu");
-                    this.buttons.startMenu.setStroke(true, 5, color(100));
-                    this.buttons.startMenu.setTextColor(color(100), 30);
-                    this.buttons.startMenu.setBounds(width - 140, height - 40, 230, 40);
+                    this.buttons.startMenu.setStroke(true, scale*5/30, color(100));
+                    this.buttons.startMenu.setTextColor(color(100), scale);
+                    this.buttons.startMenu.setBounds(width - scale*14/3, height - scale*4/3, scale*23/3, scale*4/3);
 
                     if (this.buttons.startMenu.render() === 1) event = "menu";
 
                     return event;
                 }
             }
-
             /**Renders and controls the game over menu*/
             class GameOverMenu
             {
@@ -620,7 +629,7 @@
                     setDefaultConfiguration();
                     noStroke();
 
-                    this.iterator += 10;
+                    this.iterator += scale/3;
 
                     //Principal function to set text
                     let renderText = function(t, x, y, s, c)
@@ -631,72 +640,72 @@
                     }
 
                     //Render the GAME OVER text
-                    if (height - this.iterator > 60)
-                        renderText("GAME OVER", 30, height - this.iterator, 60, color(200, 0, 0));
+                    if (height - this.iterator > scale*2)
+                        renderText("GAME OVER", scale, height - this.iterator, scale*2, color(200, 0, 0));
                     //Render what was before and the RESULTS text
-                    else if (height * 2 - this.iterator > 60*2)
+                    else if (height * 2 - this.iterator > scale*4)
                     {
-                        renderText("GAME OVER", 30, 60, 60, color(200, 0, 0));
-                        renderText("Results", 50, height*2 - this.iterator, 50, color(200, 200, 100));
+                        renderText("GAME OVER", scale, scale*2, scale*2, color(200, 0, 0));
+                        renderText("Results"  , scale*5/3, height*2 - this.iterator, scale*5/3, color(200, 200, 100));
                     }
                     //Render what was before and the LIVES USED message
-                    else if (height * 3 - this.iterator > 60*3)
+                    else if (height * 3 - this.iterator > scale*6)
                     {
-                        renderText("GAME OVER", 30,  60, 60, color(200,   0,   0));
-                        renderText("Results"  , 50, 120, 50, color(200, 200, 100));
-                        renderText("Lives used: " + gameVariable.maxLives, 100, height*3-this.iterator, 30, color(200));
+                        renderText("GAME OVER", scale    , scale*2, scale*2  , color(200,   0,   0));
+                        renderText("Results"  , scale*5/3, scale*4, scale*5/3, color(200, 200, 100));
+                        renderText("Lives used: " + gameVariable.maxLives, scale*10/3, height*3-this.iterator, scale, color(200));
                     }
                     //Render what was before and the SCORE message
-                    else if (height * 4 - this.iterator > 60*4)
+                    else if (height * 4 - this.iterator > scale*8)
                     {
-                        renderText("GAME OVER", 30,  60, 60, color(200,   0,   0));
-                        renderText("Results"  , 50, 120, 50, color(200, 200, 100));
-                        renderText("Lives used: " + gameVariable.maxLives, 100, 60*3, 30, color(200));
-                        renderText("Score: "      + gameVariable.score   , 100, height*4-this.iterator, 30, color(200));
+                        renderText("GAME OVER", scale    , scale*2, scale*2  , color(200,   0,   0));
+                        renderText("Results"  , scale*5/3, scale*4, scale*5/3, color(200, 200, 100));
+                        renderText("Lives used: " + gameVariable.maxLives, scale*10/3, scale*6, scale, color(200));
+                        renderText("Score: "      + gameVariable.score   , scale*10/3, height*4-this.iterator, scale, color(200));
                     }
                     //Render what was before and the DIFICULTY message
-                    else if (height * 5 - this.iterator > 60*5)
+                    else if (height * 5 - this.iterator > scale*10)
                     {
-                        renderText("GAME OVER", 30,  60, 60, color(200,   0,   0));
-                        renderText("Results"  , 50, 120, 50, color(200, 200, 100));
-                        renderText("Lives used: " + gameVariable.maxLives, 100, 60*3, 30, color(200));
-                        renderText("Score: "      + gameVariable.score   , 100, 60*4, 30, color(200));
+                        renderText("GAME OVER", scale    , scale*2, scale*2  , color(200,   0,   0));
+                        renderText("Results"  , scale*5/3, scale*4, scale*5/3, color(200, 200, 100));
+                        renderText("Lives used: " + gameVariable.maxLives, scale*10/3, scale*6, scale, color(200));
+                        renderText("Score: "      + gameVariable.score   , scale*10/3, scale*8, scale, color(200));
                         switch (gameVariable.dificulty)
                         {
-                            case   1: renderText("Dificulty: EASY"  , 100, height*5-this.iterator, 30, color(200)); break;
-                            case 1.5: renderText("Dificulty: MEDIUM", 100, height*5-this.iterator, 30, color(200)); break;
-                            case   2: renderText("Dificulty: HARD"  , 100, height*5-this.iterator, 30, color(200));
+                            case   1: renderText("Dificulty: EASY"  , scale*10/3, height*5-this.iterator, scale, color(200)); break;
+                            case 1.5: renderText("Dificulty: MEDIUM", scale*10/3, height*5-this.iterator, scale, color(200)); break;
+                            case   2: renderText("Dificulty: HARD"  , scale*10/3, height*5-this.iterator, scale, color(200));
                         }
                     }
                     //Render all of them
                     else
                     {
-                        renderText("GAME OVER", 30,  60, 60, color(200,   0,   0));
-                        renderText("Results"  , 50, 120, 50, color(200, 200, 100));
-                        renderText("Lives used: " + gameVariable.maxLives, 100, 60*3, 30, color(200));
-                        renderText("Score: "      + gameVariable.score   , 100, 60*4, 30, color(200));
+                        renderText("GAME OVER", scale    , scale*2, scale*2  , color(200,   0,   0));
+                        renderText("Results"  , scale*5/3, scale*4, scale*5/3, color(200, 200, 100));
+                        renderText("Lives used: " + gameVariable.maxLives, scale*10/3, scale*6, scale, color(200));
+                        renderText("Score: "      + gameVariable.score   , scale*10/3, scale*8, scale, color(200));
                         switch (gameVariable.dificulty)
                         {
-                            case   1: renderText("Dificulty: EASY"  , 100, 60*5, 30, color(200)); break;
-                            case 1.5: renderText("Dificulty: MEDIUM", 100, 60*5, 30, color(200)); break;
-                            case   2: renderText("Dificulty: HARD"  , 100, 60*5, 30, color(200));
+                            case   1: renderText("Dificulty: EASY"  , scale*10/3, scale*10, scale, color(200)); break;
+                            case 1.5: renderText("Dificulty: MEDIUM", scale*10/3, scale*10, scale, color(200)); break;
+                            case   2: renderText("Dificulty: HARD"  , scale*10/3, scale*10, scale, color(200));
                         }
                     }
                     //Render the opction buttons
-                    if (height * 6 - this.iterator < 60*6)
+                    if (height * 6 - this.iterator < scale*12)
                     {
                         //Store any event of a button
                         let event;
 
                         //Set the play again button
                         setButton(this.buttons.playAgain, "Play again");
-                        this.buttons.playAgain.setBounds(100, height - 40, 150, 40);
+                        this.buttons.playAgain.setBounds(scale*10/3, height - scale*4/3, scale*5, scale*4/3);
 
                         if (this.buttons.playAgain.render() === 1) event = "play";
 
                         //Set the return to menu button
                         setButton(this.buttons.startMenu, "Return to menu");
-                        this.buttons.startMenu.setBounds(width - 140, height - 40, 230, 40);
+                        this.buttons.startMenu.setBounds(width - scale*14/3, height - scale*4/3, scale*23/3, scale*4/3);
 
                         if (this.buttons.startMenu.render() === 1) event = "menu";
 
@@ -704,7 +713,6 @@
                     }
                 }
             }
-
             /**Renders and controls the start menu*/
             class StartMenu
             {
@@ -755,15 +763,15 @@
                     switch(this.iterator)
                     {
                         case -3:
-                            /*I use this notation (30*n) to understand easily
+                            /*I use this notation (scale*n) to understand easily
                             in which position is situated (being n the number
                             of columns/rows)*/
-                            this.snakeTitle.s .setPosition(30 *  4, 30    ); //Default
-                            this.snakeTitle.n .setPosition(30 *  6, 30 * 4);
-                            this.snakeTitle.k1.setPosition(30 * 11, 30    );
-                            this.snakeTitle.k2.setPosition(30 *  4, 30    );
-                            this.snakeTitle.e .setPosition(30 * 18, 30    );
-                            this.snakeTitle.e2.setPosition(30 *  4, 30    );
+                            this.snakeTitle.s .setPosition(scale *  4, scale    ); //Default
+                            this.snakeTitle.n .setPosition(scale *  6, scale * 4);
+                            this.snakeTitle.k1.setPosition(scale * 11, scale    );
+                            this.snakeTitle.k2.setPosition(scale *  4, scale    );
+                            this.snakeTitle.e .setPosition(scale * 18, scale    );
+                            this.snakeTitle.e2.setPosition(scale *  4, scale    );
                             
                             //Snake starts with an element on the tail
                             this.snakeTitle.s .tail.pop();
@@ -784,7 +792,7 @@
                             this.snakeTitle.s .move( 0,  1, true);
                             this.snakeTitle.n .move( 1,  1, true);
                             this.snakeTitle.k1.move( 1, -1, true);
-                            this.snakeTitle.k2.setPosition(30 * 11, 30 * 5);
+                            this.snakeTitle.k2.setPosition(scale * 11, scale * 5);
                             this.snakeTitle.e .move( 0,  1, true);
                             break;
                         case 7: case 8: case 9:
@@ -795,7 +803,7 @@
                             break;
                         case 10: case 11:
                             this.snakeTitle.e.move( 1,  0, true);
-                            this.snakeTitle.e2.setPosition(30 * 16, 30 * 4);
+                            this.snakeTitle.e2.setPosition(scale * 16, scale * 4);
                         case 12:
                             this.snakeTitle.s .move(0, 1, true);
                             this.snakeTitle.k2.move(1, 1, true);
@@ -823,7 +831,7 @@
                     if (this.iterator >= 25)
                     {
                         setButton(this.buttons.playButton, "Play");
-                        this.buttons.playButton.setBounds(width/2, 30*16, width/3, 40);
+                        this.buttons.playButton.setBounds(width/2, scale*16, width/3, scale*4/3);
 
                         if(this.buttons.playButton.render() === 1) event = "play";
                     }
@@ -836,17 +844,17 @@
                         fill(255);
 
                         //Render maxLives indicator
-                        text("Lives: " + gameVariable.maxLives, 30, height - 30);
+                        text("Lives: " + gameVariable.maxLives, scale, height - scale);
 
                         //Render less lives button
                         setButton(this.buttons.lessLivesButton, "-");
-                        this.buttons.lessLivesButton.setBounds(30 * 7, height - 30, 30, 30);
+                        this.buttons.lessLivesButton.setBounds(scale * 7, height - scale, scale, scale);
 
                         if (this.buttons.lessLivesButton.render() === 1) event = "-lives";
 
                         //Render more lives button
                         setButton(this.buttons.moreLivesButton, "+");
-                        this.buttons.moreLivesButton.setBounds(30 * 8 + 8, height - 30, 30, 30);
+                        this.buttons.moreLivesButton.setBounds(scale * 8 + scale * 4 / 15, height - scale, scale, scale);
 
                         if (this.buttons.moreLivesButton.render() === 1) event = "+lives";
                     }
@@ -860,14 +868,13 @@
                             case 1.5: setButton(this.buttons.changeDificulty, "MEDIUM"); break;
                             case   2: setButton(this.buttons.changeDificulty, "HARD"  );
                         }
-                        this.buttons.changeDificulty.setBounds(width - 100, height - 35, 150, 35);
+                        this.buttons.changeDificulty.setBounds(width - scale * 10 / 3, height - scale * 35 / 30, scale * 15 / 3, scale* 35 / 30);
 
                         if (this.buttons.changeDificulty.render() === 1) event = "dif";
                     }
                     return event;
                 }
             }
-
             /**
              * Depending on the gameState draw the game
              * 
@@ -879,6 +886,9 @@
             function draw()
             {
                 background(30);
+
+                //Calculate the scale
+                scale = width/20;
 
                 switch(gameVariable.gameState)
                 {

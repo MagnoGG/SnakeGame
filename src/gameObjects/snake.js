@@ -46,8 +46,8 @@ class Snake
             this.tail.pop();
         }
         //Update the head position
-        this.x += xs * 30;
-        this.y += ys * 30;
+        this.x += xs * scale;
+        this.y += ys * scale;
     }
     update(f)
     {
@@ -80,10 +80,10 @@ class Snake
         let renderSnake = function(x, y, tail)
         {
             //Draw the head
-            square(x, y, 30);
+            square(x, y, scale);
             //Draw the tail
             for (let i = 0; i < tail.length; i++)
-                square(tail[i].x, tail[i].y, 30);
+                square(tail[i].x, tail[i].y, scale);
         };
         if (this.blink === -1) renderSnake(this.x, this.y, this.tail);
         else if (this.blink >= 0)

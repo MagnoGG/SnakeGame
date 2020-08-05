@@ -10,16 +10,21 @@
  */
  
 /**Global variables*/
+let scale;
 let gameVariable;
 let gui;
 let game;
-let temp
+let temp;
  
 /**Set up the system, iniciate variables*/
 function setup()
 {
-    //Creating a canvas and linking it to the html
-    createCanvas(600, 600).parent("game");
+    /*Creating a canvas and linking it to the html
+    depending on the size of the window*/
+    if (windowWidth <= windowHeight)
+        createCanvas(windowWidth - 120, windowWidth - 120).parent("game");
+    else if ((windowWidth > windowHeight))
+        createCanvas(windowHeight - 120, windowHeight - 120).parent("game");
 
     //Initialating
     game = 
@@ -67,6 +72,15 @@ function setup()
         lastMouseX : 0,
         lastMouseY : 0
     };
+}
+
+function windowResized()
+{
+    resizeCanvas();
+    if (windowWidth <= windowHeight)
+        resizeCanvas(windowWidth - 120, windowWidth - 120);
+    else if ((windowWidth > windowHeight))
+        resizeCanvas(windowHeight - 120, windowHeight - 120);
 }
 
 function keyPressed()
@@ -159,7 +173,7 @@ function snakeControl(isX, x, y)
 function setButton(b, text)
 {
     b.setText(text);
-    b.setTextColor(color(255), 30);
+    b.setTextColor(color(255), scale);
     b.setRolloverTextColor(color(255, 255, 100));
     b.setPressedTextColor(color(255, 0, 0));
 
@@ -167,9 +181,9 @@ function setButton(b, text)
     b.setRolloverColor(false);
     b.setPressedColor(false);
 
-    b.setStroke(true, 5, color(255));
-    b.setRolloverStroke(true, 7, color(255, 255, 100));
-    b.setPressedStroke(true, 7, color(255, 0, 0));
+    b.setStroke        (true, scale * 5 / 30, color(255));
+    b.setRolloverStroke(true, scale * 7 / 30, color(255, 255, 100));
+    b.setPressedStroke (true, scale * 7 / 30, color(255, 0, 0));
 }
 
 /**Set the default configuration for the render*/
@@ -177,13 +191,13 @@ function setDefaultConfiguration()
 {
     textAlign(LEFT, CENTER);
     textFont("Consolas");
-    textSize(30);
+    textSize(scale);
     textStyle(NORMAL);
  
     fill(100);
      
-    stroke(30);
-    strokeWeight(5);
+    stroke(scale);
+    strokeWeight(scale * 5 / 30);
     strokeCap(SQUARE);
     strokeJoin(MITER);
  

@@ -10,6 +10,9 @@ function draw()
 {
     background(30);
 
+    //Calculate the scale
+    scale = width/20;
+
     switch(gameVariable.gameState)
     {
         //Start menu
